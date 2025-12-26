@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Настройки</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .settings-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 2rem;
+        }
+
+        .form-section {
+            background: #f8f9fc;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #4e73df;
+        }
+    </style>
+</head>
+<body>
+<div class="settings-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-gear me-2"></i>Настройки системы</h2>
+        <a href="/web/downtimes" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        Настройки успешно сохранены
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <form method="post" th:action="@{/web/downtimes/settings}">
+        <div class="form-section">
+            <h5 class="mb-3"><i class="bi bi-clock"></i> Настройки автообновления</h5>
+            <div class="mb-3">
+                <label class="form-label">Интервал автообновления (секунды)</label>
+                <input type="number" class="form-control" name="refreshInterval" min="10" max="300" value="30">
+                <div class="form-text">От 10 до 300 секунд</div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5 class="mb-3"><i class="bi bi-card-image"></i> Настройки фотографий</h5>
+            <div class="mb-3">
+                <label class="form-label">Максимальный размер файла (MB)</label>
+                <input type="number" class="form-control" name="maxFileSize" min="1" max="50" value="10">
+            </div>
+            <div class="mb-3">
+                <label class="form-check-label">
+                    <input type="checkbox" class="form-check-input" name="compressImages" checked>
+                    Сжимать изображения перед загрузкой
+                </label>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5 class="mb-3"><i class="bi bi-bell"></i> Уведомления</h5>
+            <div class="mb-3">
+                <label class="form-check-label">
+                    <input type="checkbox" class="form-check-input" name="emailNotifications" checked>
+                    Отправлять уведомления по email
+                </label>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between pt-3 border-top">
+            <a href="/web/downtimes" class="btn btn-outline-secondary">Отмена</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Сохранить настройки
+            </button>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

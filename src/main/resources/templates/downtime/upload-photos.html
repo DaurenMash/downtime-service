@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Загрузка фото</title>
+</head>
+<body>
+<h1>Загрузка фото для простоя #<span th:text="${downtime.id}"></span></h1>
+
+<!-- Сообщение об успехе -->
+<div th:if="${successMessage}" style="color: green; padding: 10px; border: 1px solid green;">
+    <span th:text="${successMessage}"></span>
+</div>
+
+<form method="post" th:action="@{/web/downtimes/{id}/photos(id=${downtime.id})}" enctype="multipart/form-data">
+    <input type="file" name="files" multiple>
+    <button type="submit">Загрузить фото</button>
+</form>
+
+<!-- Ссылка назад к просмотру простоя -->
+<br>
+<a th:href="@{/web/downtimes/{id}(id=${downtime.id})}">← Вернуться к просмотру простоя</a>
+</body>
+</html>

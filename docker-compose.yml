@@ -1,0 +1,59 @@
+services:
+  mongodb:
+    image: mongo:6
+    container_name: downtime-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+
+  minio:
+    image: minio/minio:latest
+    container_name: downtime-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  downtime-service:
+    build: .
+    container_name: downtime-service
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/downtime_db?authSource=admin
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_REGION: us-east-1
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET_NAME: downtime-photos
+    depends_on:
+      mongodb:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mongo_data:  # ← Определяем volume для MongoDB
+    name: downtime-mongo-data  # Опционально: задаем имя
+  minio_data:  # ← Определяем volume для MinIO
+    name: downtime-minio-data  # Опционально: задаем имя
+
+    #  Swagger UI: http://localhost:8080/api/swagger-ui.html
+    #  API Docs: http://localhost:8080/api/api-docs
+    #  MinIO Console: http://localhost:9001 (admin/minioadmin)
