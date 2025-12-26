@@ -81,9 +81,6 @@ public class DowntimeWebController {
     @GetMapping("/check-db")
     @ResponseBody
     public String checkDatabase() {
-        // Убедитесь, что используете правильный импорт
-        // import com.example.downtime.repository.DowntimeRepository;
-
         long count = downtimeRepository.count();
         List<DowntimeEvent> all = downtimeRepository.findAll();
 
@@ -175,45 +172,44 @@ public class DowntimeWebController {
     }
 
     @GetMapping("/{id}")
-    public String getDowntimeDetails(@PathVariable String id, Model model) {
-        DowntimeResponse downtime = downtimeService.getDowntime(id);
+    public String getDowntimeDetails(@PathVariable Long id, Model model) { // String -> Long
+        DowntimeResponse downtime = downtimeService.getDowntime(id.toString());
         model.addAttribute("downtime", downtime);
         return "downtime/detail";
     }
 
     @GetMapping("/{id}/photos")
-    public String uploadPhotoPage(@PathVariable String id, Model model) {
-        DowntimeResponse downtime = downtimeService.getDowntime(id);
+    public String uploadPhotoPage(@PathVariable Long id, Model model) { // String -> Long
+        DowntimeResponse downtime = downtimeService.getDowntime(id.toString());
         model.addAttribute("downtime", downtime);
         return "downtime/upload-photos";
     }
 
     @PostMapping("/{id}/photos")
-    public String uploadPhotos(@PathVariable String id,
+    public String uploadPhotos(@PathVariable Long id, // String -> Long
                                @RequestParam("files") List<MultipartFile> files,
                                Model model) {
 
         for (MultipartFile file : files) {
             if (!file.isEmpty()) {
-                String photoUrl = fileStorageService.uploadFile(file, id);
-                downtimeService.addPhotoToDowntime(id, photoUrl);
+                String photoUrl = fileStorageService.uploadFile(file, id.toString());
+                downtimeService.addPhotoToDowntime(id.toString(), photoUrl);
             }
         }
 
         // Обновляем данные простоя
-        DowntimeResponse downtime = downtimeService.getDowntime(id);
+        DowntimeResponse downtime = downtimeService.getDowntime(id.toString());
         model.addAttribute("downtime", downtime);
         model.addAttribute("successMessage", "Фото успешно загружены!");
 
-        // Возвращаем ту же страницу
         return "downtime/upload-photos";
     }
 
     @PostMapping("/{id}/resolve")
-    public String resolveDowntime(@PathVariable String id,
+    public String resolveDowntime(@PathVariable Long id, // String -> Long
                                   @RequestParam(required = false) String comment) {
-        downtimeService.resolveDowntime(id, comment);
-        return "redirect:/web/downtimes/" + id; // ← ИСПРАВЛЕНО
+        downtimeService.resolveDowntime(id.toString(), comment);
+        return "redirect:/web/downtimes/" + id;
     }
 
     @GetMapping("/settings")

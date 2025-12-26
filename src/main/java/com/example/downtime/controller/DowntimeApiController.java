@@ -29,8 +29,8 @@ public class DowntimeApiController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get downtime event by ID")
-    public ResponseEntity<DowntimeResponse> getDowntime(@PathVariable String id) {
-        return ResponseEntity.ok(downtimeService.getDowntime(id));
+    public ResponseEntity<DowntimeResponse> getDowntime(@PathVariable Long id) { // String -> Long
+        return ResponseEntity.ok(downtimeService.getDowntime(id.toString()));
     }
 
     @GetMapping("/equipment/{equipmentId}")
@@ -56,8 +56,8 @@ public class DowntimeApiController {
     @PutMapping("/{id}/resolve")
     @Operation(summary = "Resolve a downtime event")
     public ResponseEntity<DowntimeResponse> resolveDowntime(
-            @PathVariable String id,
+            @PathVariable Long id, // String -> Long
             @RequestParam(required = false) String comment) {
-        return ResponseEntity.ok(downtimeService.resolveDowntime(id, comment));
+        return ResponseEntity.ok(downtimeService.resolveDowntime(id.toString(), comment));
     }
 }
