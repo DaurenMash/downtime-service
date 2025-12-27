@@ -173,14 +173,14 @@ public class DowntimeWebController {
 
     @GetMapping("/{id}")
     public String getDowntimeDetails(@PathVariable Long id, Model model) { // String -> Long
-        DowntimeResponse downtime = downtimeService.getDowntime(id.toString());
+        DowntimeResponse downtime = downtimeService.getDowntime(id);
         model.addAttribute("downtime", downtime);
         return "downtime/detail";
     }
 
     @GetMapping("/{id}/photos")
     public String uploadPhotoPage(@PathVariable Long id, Model model) { // String -> Long
-        DowntimeResponse downtime = downtimeService.getDowntime(id.toString());
+        DowntimeResponse downtime = downtimeService.getDowntime(id);
         model.addAttribute("downtime", downtime);
         return "downtime/upload-photos";
     }
@@ -193,12 +193,12 @@ public class DowntimeWebController {
         for (MultipartFile file : files) {
             if (!file.isEmpty()) {
                 String photoUrl = fileStorageService.uploadFile(file, id.toString());
-                downtimeService.addPhotoToDowntime(id.toString(), photoUrl);
+                downtimeService.addPhotoToDowntime(id, photoUrl);
             }
         }
 
         // Обновляем данные простоя
-        DowntimeResponse downtime = downtimeService.getDowntime(id.toString());
+        DowntimeResponse downtime = downtimeService.getDowntime(id);
         model.addAttribute("downtime", downtime);
         model.addAttribute("successMessage", "Фото успешно загружены!");
 
@@ -208,7 +208,7 @@ public class DowntimeWebController {
     @PostMapping("/{id}/resolve")
     public String resolveDowntime(@PathVariable Long id, // String -> Long
                                   @RequestParam(required = false) String comment) {
-        downtimeService.resolveDowntime(id.toString(), comment);
+        downtimeService.resolveDowntime(id, comment);
         return "redirect:/web/downtimes/" + id;
     }
 

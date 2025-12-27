@@ -17,7 +17,8 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL) // Не включать null поля в JSON
 public class DowntimeResponse {
 
-    private Long id;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long id; // Long внутри Java, но в JSON будет строкой
     private String equipmentId;
     private String equipmentName;
     private String operatorId;

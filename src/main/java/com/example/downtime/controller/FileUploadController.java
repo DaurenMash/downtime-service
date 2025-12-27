@@ -22,10 +22,10 @@ public class FileUploadController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload photo for downtime event")
     public ResponseEntity<String> uploadPhoto(
-            @PathVariable String downtimeId,
+            @PathVariable Long downtimeId, // String -> Long
             @RequestParam("file") MultipartFile file) {
 
-        String photoUrl = fileStorageService.uploadFile(file, downtimeId);
+        String photoUrl = fileStorageService.uploadFile(file, downtimeId.toString());
         downtimeService.addPhotoToDowntime(downtimeId, photoUrl);
 
         return ResponseEntity.ok(photoUrl);

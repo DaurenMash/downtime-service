@@ -9,9 +9,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
-public interface DowntimeRepository extends MongoRepository<DowntimeEvent, String> {
 
+import org.springframework.data.mongodb.repository.Query;
+
+@Repository
+public interface DowntimeRepository extends MongoRepository<DowntimeEvent, Long> {
+
+    // Основные методы поиска
     List<DowntimeEvent> findByEquipmentId(String equipmentId);
 
     List<DowntimeEvent> findByEquipmentIdAndStatus(String equipmentId, DowntimeStatus status);
@@ -22,20 +26,66 @@ public interface DowntimeRepository extends MongoRepository<DowntimeEvent, Strin
 
     List<DowntimeEvent> findByOperatorId(String operatorId);
 
-    Optional<DowntimeEvent> findByIdAndOperatorId(String id, String operatorId);
+    // ИСПРАВЛЕНО: тип ID изменен с String на Long
+    Optional<DowntimeEvent> findByIdAndOperatorId(Long id, String operatorId);
 
     boolean existsByEquipmentIdAndStatus(String equipmentId, DowntimeStatus status);
 
     long countByStatus(DowntimeStatus status);
 
-    // ИСПРАВЛЕНО: для подсчета сегодняшних событий
     long countByStartTimeGreaterThanEqual(LocalDateTime dateTime);
 
-    // УДАЛИТЬ методы, которые не являются стандартными для Spring Data MongoDB:
-    // long countToday();                    ← удалить (реализовать в сервисе)
-    // String getAverageDuration();          ← удалить (реализовать в сервисе)
-    // long countTotalPhotos();              ← удалить (реализовать в сервисе)
-    // List<Map<String, String>> getAllEquipment(); ← удалить (реализовать в сервисе)
-    // Page<DowntimeEvent> getFilteredDowntimes(...); ← удалить (реализовать в сервисе)
-    // DowntimeEvent getDowntimeEntity(String id); ← удалить (использовать findById)
+    // Дополнительные методы для улучшения производительности
+    List<DowntimeEvent> findByEquipmentIdAndStartTimeAfter(String equipmentId, LocalDateTime startTime);
+
+    List<DowntimeEvent> findByEquipmentIdAndStartTimeBefore(String equipmentId, LocalDateTime endTime);
+
+    // Методы для поиска по диапазону дат и статусу
+    List<DowntimeEvent> findByStatusAndStartTimeBetween(DowntimeStatus status, LocalDateTime start, LocalDateTime end);
+
+    List<DowntimeEvent> findByEquipmentIdAndStatusAndStartTimeBetween(
+            String equipmentId,
+            DowntimeStatus status,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    // Удаление по оборудованию
+    void deleteByEquipmentId(String equipmentId);
+
+    // Поиск активных простоев для определенного оборудования
+    @Query("{ 'equipmentId': ?0, 'status': 'ACTIVE' }")
+    List<DowntimeEvent> findActiveDowntimesByEquipment(String equipmentId);
+
+    // Поиск последнего простоя для оборудования
+    @Query(value = "{ 'equipmentId': ?0 }", sort = "{ 'startTime': -1 }")
+    List<DowntimeEvent> findLatestByEquipmentId(String equipmentId, org.springframework.data.domain.Pageable pageable);
+
+    // Подсчет простоев по оборудованию
+    long countByEquipmentId(String equipmentId);
+
+    // Подсчет простоев по оператору
+    long countByOperatorId(String operatorId);
+
+    // Проверка существования простоя с определенным ID и оборудованием
+    boolean existsByIdAndEquipmentId(Long id, String equipmentId);
+
+    // Поиск по нескольким статусам
+    List<DowntimeEvent> findByStatusIn(List<DowntimeStatus> statuses);
+
+    // Поиск по причине (частичное совпадение)
+    @Query("{ 'reason': { $regex: ?0, $options: 'i' } }")
+    List<DowntimeEvent> findByReasonContainingIgnoreCase(String reason);
+
+    // Агрегационные методы для статистики
+    @Query(value = "{}", fields = "{ 'equipmentId': 1, 'equipmentName': 1 }")
+    List<DowntimeEvent> findDistinctEquipment();
+
+    // Метод для поиска простоев с фото
+    @Query("{ 'photoUrls': { $exists: true, $not: { $size: 0 } } }")
+    List<DowntimeEvent> findDowntimesWithPhotos();
+
+    // Метод для поиска по комментарию
+    @Query("{ 'comment': { $regex: ?0, $options: 'i' } }")
+    List<DowntimeEvent> findByCommentContaining(String searchText);
 }

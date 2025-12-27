@@ -16,7 +16,7 @@ public class SequenceGeneratorService {
     @Autowired
     private MongoOperations mongoOperations;
 
-    public long generateSequence(String seqName) {
+    public Long generateSequence(String seqName) {
         DatabaseSequence counter = mongoOperations.findAndModify(
                 Query.query(Criteria.where("_id").is(seqName)),
                 new Update().inc("seq", 1),
