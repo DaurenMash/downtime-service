@@ -1,5 +1,6 @@
 package com.example.downtime.service;
 
+import com.example.downtime.dto.EquipmentDto;
 import com.example.downtime.model.DowntimeEvent;
 import com.example.downtime.model.DowntimeRequest;
 import com.example.downtime.model.DowntimeResponse;
@@ -282,7 +283,7 @@ public class DowntimeService {
                 .sum();
     }
 
-    public List<Map<String, String>> getAllEquipment() {
+    public List<EquipmentDto> getAllEquipment() {
         try {
             Aggregation aggregation = Aggregation.newAggregation(
                     Aggregation.group("equipmentId", "equipmentName"),
@@ -292,38 +293,64 @@ public class DowntimeService {
             AggregationResults<Map> results = mongoTemplate.aggregate(
                     aggregation, "downtime_events", Map.class);
 
-            return results.getMappedResults().stream()
-                    .map(item -> {
-                        Map<String, String> equipment = new HashMap<>();
-                        Map<?, ?> idMap = (Map<?, ?>) item.get("_id");
-                        equipment.put("id", String.valueOf(idMap.get("equipmentId")));
-                        equipment.put("name", String.valueOf(idMap.get("equipmentName")));
-                        return equipment;
-                    })
-                    .filter(equipment -> equipment.get("id") != null &&
-                            !"null".equals(equipment.get("id")) &&
-                            equipment.get("name") != null)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("Ошибка при агрегации оборудования, используем fallback метод", e);
+            List<EquipmentDto> equipmentList = new ArrayList<>();
 
-            return downtimeRepository.findAll().stream()
-                    .collect(Collectors.toMap(
-                            DowntimeEvent::getEquipmentId,
-                            DowntimeEvent::getEquipmentName,
-                            (existing, replacement) -> existing
-                    ))
-                    .entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .map(entry -> {
-                        Map<String, String> map = new HashMap<>();
-                        map.put("id", entry.getKey());
-                        map.put("name", entry.getValue());
-                        return map;
-                    })
-                    .collect(Collectors.toList());
+            for (Map<?, ?> item : results.getMappedResults()) {
+                try {
+                    Map<?, ?> idMap = (Map<?, ?>) item.get("_id");
+                    if (idMap == null) {
+                        continue;  // Пропускаем, а не возвращаем null
+                    }
+
+                    String equipmentId = String.valueOf(idMap.get("equipmentId"));
+                    String equipmentName = String.valueOf(idMap.get("equipmentName"));
+
+                    // Проверка на валидные значения
+                    if ("null".equals(equipmentId) || "null".equals(equipmentName) ||
+                            equipmentId.isEmpty() || equipmentName.isEmpty()) {
+                        continue;  // Пропускаем
+                    }
+
+                    equipmentList.add(new EquipmentDto(equipmentId, equipmentName));
+                } catch (Exception e) {
+                    log.warn("Ошибка при преобразовании агрегации оборудования: {}", e.getMessage());
+                    // Продолжаем обработку остальных записей
+                }
+            }
+
+            // Если через агрегацию ничего не получили, используем fallback
+            if (equipmentList.isEmpty()) {
+                return getEquipmentFallback();
+            }
+
+            return equipmentList;
+
+        } catch (Exception e) {
+            log.warn("Ошибка при агрегации оборудования: {}, используем fallback метод", e.getMessage());
+            return getEquipmentFallback();
         }
     }
+
+    private List<EquipmentDto> getEquipmentFallback() {
+        try {
+            List<EquipmentDto> result = downtimeRepository.findAll().stream()
+                    .filter(event -> event.getEquipmentId() != null &&
+                            event.getEquipmentName() != null &&
+                            !event.getEquipmentId().trim().isEmpty() &&
+                            !event.getEquipmentName().trim().isEmpty())
+                    .map(event -> new EquipmentDto(event.getEquipmentId(), event.getEquipmentName()))
+                    .distinct()  // Убираем дубликаты
+                    .sorted(Comparator.comparing(EquipmentDto::getEquipmentId))
+                    .collect(Collectors.toList());
+
+            log.info("Fallback метод вернул {} записей оборудования", result.size());
+            return result;
+        } catch (Exception e) {
+            log.error("Ошибка в fallback методе получения оборудования: {}", e.getMessage());
+            return Collections.emptyList();  // Возвращаем пустой список, а не null
+        }
+    }
+
 
     // ========== ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ ==========
 

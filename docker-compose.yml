@@ -29,6 +29,26 @@ services:
       timeout: 20s
       retries: 3
 
+  # Новый сервис для инициализации MinIO
+  minio-init:
+    image: minio/mc:latest
+    container_name: downtime-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to be ready...';
+      sleep 10;
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      echo 'Creating bucket downtime-photos...';
+      mc mb myminio/downtime-photos || true;
+      echo 'Setting bucket policy to public read...';
+      mc anonymous set download myminio/downtime-photos;
+      echo 'MinIO initialization completed!';
+      "
+    restart: on-failure
+
   downtime-service:
     build: .
     container_name: downtime-service
@@ -44,16 +64,17 @@ services:
     depends_on:
       mongodb:
         condition: service_started
-      minio:
-        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:
-  mongo_data:  # ← Определяем volume для MongoDB
-    name: downtime-mongo-data  # Опционально: задаем имя
-  minio_data:  # ← Определяем volume для MinIO
-    name: downtime-minio-data  # Опционально: задаем имя
+  mongo_data:
+    name: downtime-mongo-data
+  minio_data:
+    name: downtime-minio-data
 
-    #  Swagger UI: http://localhost:8080/api/swagger-ui.html
-    #  API Docs: http://localhost:8080/api/api-docs
-    #  MinIO Console: http://localhost:9001 (admin/minioadmin)
+# Ссылки для доступа:
+#  Swagger UI: http://localhost:8080/api/swagger-ui.html
+#  API Docs: http://localhost:8080/api/api-docs
+#  MinIO Console: http://localhost:9001 (admin/minioadmin)
