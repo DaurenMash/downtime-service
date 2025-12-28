@@ -17,7 +17,7 @@ import java.util.List;
 
 @Document(collection = "downtime_events")
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class DowntimeEvent {

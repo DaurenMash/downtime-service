@@ -46,7 +46,7 @@ public class DowntimeService {
                 .operatorId(request.getOperatorId())
                 .operatorName(request.getOperatorName())
                 .startTime(request.getStartTime() != null ?
-                        request.getStartTime() : LocalDateTime.now())
+                        request.getStartTime() : getCurrentTime())
                 .endTime(request.getEndTime())
                 .reason(request.getReason())
                 .comment(request.getComment())
@@ -64,6 +64,10 @@ public class DowntimeService {
         log.info("ID сохраненного события: {}", saved.getId());
 
         return mapToResponse(saved);
+    }
+
+    public LocalDateTime getCurrentTime() {
+        return LocalDateTime.now();
     }
 
     // ========== ПОЛУЧЕНИЕ ПРОСТОЯ ПО ID ==========
