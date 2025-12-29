@@ -18,6 +18,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.within;
@@ -49,6 +51,49 @@ class DowntimeServiceTest {
         event = DowntimeTestFactory.createEventFromRequest(request);
 //        LocalDateTime mockedTime = event.getCreatedAt();
 //        doReturn(mockedTime).when(downtimeService).getCurrentTime();
+    }
+
+    @Test
+    void findByOperatorIdSorted_shouldReturnEventsSortedByStartTimeDesc() {
+        // Given
+        String operatorId = "01";
+
+        LocalDateTime now = LocalDateTime.now();
+        DowntimeEvent event1 = DowntimeEvent.builder()
+                .id(1L)
+                .operatorId(operatorId)
+                .startTime(now.minusHours(3))
+                .build();
+
+        DowntimeEvent event2 = DowntimeEvent.builder()
+                .id(2L)
+                .operatorId(operatorId)
+                .startTime(now.minusHours(1))
+                .build();
+
+        DowntimeEvent event3 = DowntimeEvent.builder()
+                .id(3L)
+                .operatorId(operatorId)
+                .startTime(now.minusHours(2))
+                .build();
+
+        // Events should be returned in descending order by startTime
+        List<DowntimeEvent> expectedEvents = Arrays.asList(event2, event3, event1);
+
+        // Mock the QueryDSL method
+        when(downtimeService.getEventsByOperatorSorted(operatorId)).thenReturn(expectedEvents);
+
+        // When
+        List<DowntimeEvent> result = downtimeService.getEventsByOperatorSorted(operatorId);
+
+        // Then
+        assertThat(result).hasSize(3);
+        assertThat(result).extracting(DowntimeEvent::getId)
+                .containsExactly(2L, 3L, 1L); // event2 (newest), event3, event1 (oldest)
+
+        // Verify sorting
+        assertThat(result.get(0).getStartTime()).isAfter(result.get(1).getStartTime());
+        assertThat(result.get(1).getStartTime()).isAfter(result.get(2).getStartTime());
     }
 
     @Test

@@ -2,7 +2,10 @@ package com.example.downtime.repository;
 
 import com.example.downtime.model.DowntimeEvent;
 import com.example.downtime.model.DowntimeStatus;
+import com.example.downtime.model.QDowntimeEvent;
+import com.querydsl.core.types.Predicate;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -13,7 +16,10 @@ import java.util.Optional;
 import org.springframework.data.mongodb.repository.Query;
 
 @Repository
-public interface DowntimeRepository extends MongoRepository<DowntimeEvent, Long> {
+public interface DowntimeRepository extends
+        MongoRepository<DowntimeEvent, Long>,
+        QuerydslPredicateExecutor<DowntimeEvent>
+{
 
     // Основные методы поиска
     List<DowntimeEvent> findByEquipmentId(String equipmentId);
@@ -26,7 +32,12 @@ public interface DowntimeRepository extends MongoRepository<DowntimeEvent, Long>
 
     List<DowntimeEvent> findByOperatorId(String operatorId);
 
-    // ИСПРАВЛЕНО: тип ID изменен с String на Long
+    default List<DowntimeEvent> findByOperatorIdSorted(String operatorId) {
+        QDowntimeEvent q = QDowntimeEvent.downtimeEvent;
+        Predicate predicate = q.operatorId.eq(operatorId);
+        return (List<DowntimeEvent>) findAll(predicate, q.startTime.desc());
+    }
+
     Optional<DowntimeEvent> findByIdAndOperatorId(Long id, String operatorId);
 
     boolean existsByEquipmentIdAndStatus(String equipmentId, DowntimeStatus status);

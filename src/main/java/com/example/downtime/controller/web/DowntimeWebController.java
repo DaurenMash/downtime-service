@@ -42,6 +42,16 @@ public class DowntimeWebController {
     private final DowntimeRepository downtimeRepository;
     private final SettingsService settingsService;
 
+    @GetMapping("/")
+    public String redirectToDowntimes() {
+        return "redirect:/web/downtimes";
+    }
+
+    @GetMapping("/web")
+    public String redirectToDowntimesFromWeb() {
+        return "redirect:/web/downtimes";
+    }
+
     @PostConstruct
     public void initSettings() {
         try {

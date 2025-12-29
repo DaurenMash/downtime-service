@@ -78,6 +78,10 @@ public class DowntimeService {
         return mapToResponse(event);
     }
 
+    public List<DowntimeEvent> getEventsByOperatorSorted(String operatorId) {
+        return downtimeRepository.findByOperatorIdSorted(operatorId);
+    }
+
     // Для обратной совместимости
     public DowntimeResponse getDowntime(String id) {
         log.debug("Получение простоя по ID (String): {}", id);
