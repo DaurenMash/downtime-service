@@ -33,7 +33,7 @@ public class S3Config {
                         AwsBasicCredentials.create(accessKey, secretKey)
                 ))
                 .region(Region.of(region))
-                .forcePathStyle(true) // Важно для MinIO
+                .forcePathStyle(true)
                 .build();
     }
 }

@@ -15,11 +15,15 @@ services:
     image: minio/minio:latest
     container_name: downtime-minio
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_PORT_0}:9000"
+      - "${MINIO_PORT_1}:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_SERVER_URL: http://localhost:${MINIO_PORT_0}
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:${MINIO_PORT_1}
+      MINIO_API_PORT: "9000"
+      MINIO_CONSOLE_PORT: "9001"
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -61,18 +65,24 @@ services:
       AWS_REGION: us-east-1
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET_NAME: downtime-photos
+      MINIO_PORT_0: ${MINIO_PORT_0}  # Для логирования/отладки
+      MINIO_PORT_1: ${MINIO_PORT_1}
     depends_on:
       mongodb:
         condition: service_started
       minio-init:
         condition: service_completed_successfully
     restart: unless-stopped
+    volumes:
+      - maven-cache:/root/.m2
 
 volumes:
   mongo_data:
     name: downtime-mongo-data
   minio_data:
     name: downtime-minio-data
+  maven-cache:
+    name: downtime-maven-cache
 
 # Ссылки для доступа:
 #  Swagger UI: http://localhost:8080/api/swagger-ui.html

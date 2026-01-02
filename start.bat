@@ -1,6 +1,6 @@
 docker-compose down
 docker-compose build downtime-service
-docker-compose up -d
+docker-compose --env-file .env.dev up -d
 
 
 

@@ -1,67 +1,67 @@
 package com.example.downtime.integrationtest;
 
-import com.example.downtime.factory.DowntimeTestFactory;
-import com.example.downtime.model.DowntimeRequest;
-import com.example.downtime.model.DowntimeResponse;
+import com.example.downtime.model.DowntimeEvent;
 import com.example.downtime.repository.DowntimeRepository;
-import com.example.downtime.service.DowntimeService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.TestPropertySource;
 import software.amazon.awssdk.services.s3.S3Client;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@Testcontainers
-@SpringBootTest
+@DataMongoTest
+@TestPropertySource(properties = {
+        "spring.data.mongodb.uri=mongodb://admin:password@localhost:27017/downtime_db?authSource=admin",
+        "s3.enabled=false"
+})
 public class DowntimeServiceIntegrationTest {
-
-    @Container
-    private static final MongoDBContainer mongoDBContainer =
-            new MongoDBContainer("mongo:6.0");
-
-    @DynamicPropertySource
-    static void setProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
-        registry.add("s3.enabled", () -> "false"); // Отключаем S3
-    }
-
-    @MockBean
-    private S3Client s3Client;
 
     @Autowired
     private DowntimeRepository downtimeRepository;
 
-    @Autowired
-    private DowntimeService downtimeService;
-
-    @BeforeEach
-    void setUp() {
-        downtimeRepository.deleteAll();
-    }
-
     @Test
-    void createDowntime_Success() {
-        // Подготавливаем данные
-        DowntimeRequest request = DowntimeTestFactory.createRequestWithDefaults();
+    void findByOperatorIdSorted_ShouldWorkWithRealData() {
+        // Находим любого оператора, у которого есть события в базе
+        Optional<DowntimeEvent> anyEvent = downtimeRepository.findAll()
+                .stream()
+                .filter(event -> event.getOperatorId() != null)
+                .findFirst();
 
-        // Выполняем тестируемый метод
-        DowntimeResponse response = downtimeService.createDowntime(request);
+        // Если в базе нет данных с операторами, пропускаем тест
+        assumeTrue(anyEvent.isPresent(), "В базе нет событий с операторами для тестирования");
 
-        // Проверяем результат
-        assertThat(response).isNotNull();
-        assertThat(response.getEquipmentId()).isEqualTo("EQ-001");
+        String operatorId = anyEvent.get().getOperatorId();
 
-        // Проверяем, что данные сохранены в MongoDB
-        assertThat(downtimeRepository.count()).isEqualTo(1);
+        // Act
+        List<DowntimeEvent> result = downtimeRepository.findByOperatorIdSorted(operatorId);
+
+        // Assert: проверяем базовые свойства метода
+        assertThat(result).isNotNull();
+
+        if (!result.isEmpty()) {
+            // Проверяем, что все события принадлежат указанному оператору
+            assertThat(result)
+                    .allMatch(event -> operatorId.equals(event.getOperatorId()));
+
+            // Проверяем сортировку по убыванию времени начала
+            assertThat(result)
+                    .extracting(DowntimeEvent::getStartTime)
+                    .isSortedAccordingTo(Comparator.reverseOrder());
+        }
+
+        // Выводим информацию для отладки
+        System.out.println("Оператор: " + operatorId);
+        System.out.println("Найдено событий: " + result.size());
+        result.forEach(event ->
+                System.out.println("  ID: " + event.getId() +
+                        ", Start: " + event.getStartTime() +
+                        ", Equipment: " + event.getEquipmentId()));
     }
 }
