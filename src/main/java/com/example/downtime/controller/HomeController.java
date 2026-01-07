@@ -8,6 +8,11 @@ public class HomeController {
 
     @GetMapping("/")
     public String home() {
-        return "redirect:/web/downtimes"; // ← ИСПРАВЛЕНО (было /api/downtimes)
+        return "redirect:/web/downtimes";
+    }
+
+    @GetMapping("/monitor")
+    public String redirectToMonitor() {
+        return "redirect:/web/monitor";
     }
 }

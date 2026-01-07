@@ -245,6 +245,11 @@
         <i class="fas fa-sync-alt me-1"></i>
         Auto-refresh: <span th:text="${refreshInterval}">30</span>s
       </span>
+
+      <a th:href="@{/web/monitor/dashboard}" class="btn btn-outline-primary me-2">
+        <i class="fas fa-tv me-2"></i>Мониторинг
+      </a>
+
       <a th:href="@{/web/downtimes/new}" class="btn btn-primary">
         <i class="fas fa-plus me-2"></i>Новый простой
       </a>
